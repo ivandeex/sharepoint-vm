@@ -1,0 +1,21 @@
+<Configuration>
+  <Package Id="sts">
+    <Setting Id="LAUNCHEDFROMSETUPSTS" Value="Yes" />
+  </Package>
+  <Package Id="spswfe">
+    <Setting Id="SETUPCALLED" Value="1" />
+  </Package>
+  <Setting Id="SERVERROLE" Value="APPLICATION" />
+  <Setting Id="USINGUIINSTALLMODE" Value="0" />
+  <Setting Id="SETUPTYPE" Value="CLEAN_INSTALL" />
+  <Setting Id="SETUP_REBOOT" Value="Never" />
+  <Setting Id="AllowWindowsClientInstall" Value="True" />
+  <PIDKEY Value="NQGJR-63HC8-XCRQH-MYVCH-3J3QR" />
+  <ARP ARPCOMMENTS="" ARPCONTACT="" />
+  <!-- On AWS Disk C: has less than 1GB free after setup -->
+  <INSTALLLOCATION Value="${sharepoint_dir}" />
+  <DATADIR Value="${sharepoint_dir}${sep}data" />
+  <!-- set display level of "none" to skip interactive farm setup -->
+  <Display Level="none" CompletionNotice="no" AcceptEula="Yes" />
+  <Logging Type="verbose" Path="C:${sep}" Template="SPServerSetup_*.log" />
+</Configuration>
