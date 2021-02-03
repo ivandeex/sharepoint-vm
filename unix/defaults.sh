@@ -1,0 +1,5 @@
+PROVIDER_NAME="${provider_name}"
+UNIX_ETHERNET2="${unix_ethernet2}"
+UNIX_LOCALIP="${unix_localip}"
+ADDC_LOCALIP="${addc_localip}"
+ADMIN_PASSWORD="${admin_password}"

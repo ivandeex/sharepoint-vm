@@ -7,6 +7,10 @@ variable "aws_instance_type" {
   default = "t2.medium"
 }
 
+variable "aws_unix_instance_type" {
+  default = "t2.small"
+}
+
 variable "ssh_key_name" {
   default = {
     "us-east-1"    = "my_ssh_key"
@@ -34,6 +38,15 @@ variable "aws_w2012r2_mssql2014_amis" {
   }
 }
 
+variable "aws_unix_amis" {
+  # Ubuntu 20.04 LTS x64
+  default = {
+    us-east-1    = "ami-03d315ad33b9d49c4"
+    us-west-2    = "ami-0928f4202481dfdf6"
+    eu-central-1 = "ami-0932440befd74cdba"
+  }
+}
+
 # server names
 variable "stack_name" {
   default = "sptest"
@@ -51,6 +64,10 @@ variable "spap_hostname" {
   default = "spap"
 }
 
+variable "unix_hostname" {
+  default = "unix"
+}
+
 # private network
 variable "private_net" {
   default = "10.20.30"
@@ -60,6 +77,7 @@ locals {
   addc_localip = "${var.private_net}.5"
   msql_localip = "${var.private_net}.6"
   spap_localip = "${var.private_net}.7"
+  unix_localip = "${var.private_net}.8"
 }
 
 # application settings
