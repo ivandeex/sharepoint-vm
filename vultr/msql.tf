@@ -18,12 +18,12 @@ resource "vultr_instance" "msql" {
     user     = "Administrator"
     password = var.admin_password
     host     = self.main_ip
-    timeout  = "10m"
+    timeout  = "15m"
   }
 
-  # Wait for Active Directory setup to complete
+  # Wait for instance setup
   provisioner "local-exec" {
-    command = "sleep 300"
+    command = "sleep 120"
   }
 
   # Copy scripts and settings to instance
@@ -74,6 +74,24 @@ resource "vultr_instance" "msql" {
   # Setup SQL Server
   provisioner "remote-exec" {
     inline = ["C:\\setup\\msql1-hostname.bat"]
+  }
+
+  # Wait for completion
+  provisioner "local-exec" {
+    command = "sleep 360"
+  }
+
+  provisioner "remote-exec" {
+    inline     = ["C:\\setup\\wait.bat"]
+    on_failure = continue
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 120"
+  }
+
+  provisioner "remote-exec" {
+    inline = ["C:\\setup\\wait.bat"]
   }
 }
 

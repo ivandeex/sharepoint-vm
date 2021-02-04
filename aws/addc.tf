@@ -17,7 +17,7 @@ resource "aws_instance" "addc" {
     user     = "Administrator"
     password = var.admin_password
     host     = self.public_ip
-    timeout  = "10m"
+    timeout  = "15m"
   }
 
   # Wait for instance setup
@@ -54,6 +54,24 @@ resource "aws_instance" "addc" {
   # Setup Active Directory
   provisioner "remote-exec" {
     inline = ["C:\\setup\\addc1-hostname.bat"]
+  }
+
+  # Wait for completion
+  provisioner "local-exec" {
+    command = "sleep 360"
+  }
+
+  provisioner "remote-exec" {
+    inline     = ["C:\\setup\\wait.bat"]
+    on_failure = continue
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 120"
+  }
+
+  provisioner "remote-exec" {
+    inline = ["C:\\setup\\wait.bat"]
   }
 }
 

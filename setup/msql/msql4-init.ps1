@@ -83,5 +83,6 @@ Remove-ItemProperty -Path $RegPath -Name 'DefaultDomainName'
 
 # All done!
 Write-Host "SQL Server configured!"
+Set-Content -Path C:\setup\done -Value done
 Start-Sleep -Seconds 5
 Restart-Computer -Force

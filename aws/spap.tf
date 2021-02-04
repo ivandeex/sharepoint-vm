@@ -25,12 +25,12 @@ resource "aws_instance" "spap" {
     user     = "Administrator"
     password = var.admin_password
     host     = self.public_ip
-    timeout  = "10m"
+    timeout  = "15m"
   }
 
   # Wait for instance setup
   provisioner "local-exec" {
-    command = "sleep 120"
+    command = "sleep 90"
   }
 
   # Copy scripts and settings to instance
@@ -82,6 +82,24 @@ resource "aws_instance" "spap" {
   # Setup Sharepoint
   provisioner "remote-exec" {
     inline = ["C:\\setup\\spap1-hostname.bat"]
+  }
+
+  # Wait for completion
+  provisioner "local-exec" {
+    command = "sleep 3900"
+  }
+
+  provisioner "remote-exec" {
+    inline     = ["C:\\setup\\wait.bat"]
+    on_failure = continue
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 120"
+  }
+
+  provisioner "remote-exec" {
+    inline = ["C:\\setup\\wait.bat"]
   }
 }
 

@@ -51,5 +51,6 @@ Remove-ItemProperty -Path $RegPath -Name 'DefaultDomainName'
 
 # All done!
 Write-Host "Domain users added!"
+Set-Content -Path C:\setup\done -Value done
 Start-Sleep -Seconds 5
 Restart-Computer -Force

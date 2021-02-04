@@ -18,12 +18,12 @@ resource "vultr_instance" "spap" {
     user     = "Administrator"
     password = var.admin_password
     host     = self.main_ip
-    timeout  = "10m"
+    timeout  = "15m"
   }
 
   # Wait for instance setup
   provisioner "local-exec" {
-    command = "sleep 90"
+    command = "sleep 120"
   }
 
   # Copy scripts and settings to instance
@@ -89,6 +89,24 @@ resource "vultr_instance" "spap" {
   # Setup Sharepoint
   provisioner "remote-exec" {
     inline = ["C:\\setup\\spap1-hostname.bat"]
+  }
+
+  # Wait for completion
+  provisioner "local-exec" {
+    command = "sleep 1200"
+  }
+
+  provisioner "remote-exec" {
+    inline     = ["C:\\setup\\wait.bat"]
+    on_failure = continue
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 120"
+  }
+
+  provisioner "remote-exec" {
+    inline = ["C:\\setup\\wait.bat"]
   }
 }
 
