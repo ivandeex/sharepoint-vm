@@ -20,6 +20,27 @@ $PlainPass = (Get-Content C:\setup\pass.txt -First 1).Trim()
 $SecurePass = (ConvertTo-SecureString $PlainPass -AsPlaintext -Force)
 $CredFarmAcc = (New-Object System.Management.Automation.PsCredential $FarmAcc,$SecurePass)
 
+# Verify that DC is accessible
+Import-Module ActiveDirectory
+$OK = 'FAIL'
+foreach ($i in 1..10) {
+    $getres = Get-ADUser -Identity $FarmAccName -ErrorAction SilentlyContinue
+    if ((Test-Path variable:getres) -and $getres) {
+        $OK = 'PASS'
+        break
+    }
+    Write-Host "Waiting for AD to come up (attempt ${i})..."
+    Start-Sleep -Seconds 10
+}
+Write-Host "Active Directory: ${OK}"
+if ($OK -ne 'PASS') {
+    exit 1
+}
+Start-Sleep -Seconds 2
+
+#Write-Host "Dropping old content, if any."
+#sqlcmd.exe -S $DBServer -U $DBAdmin -P $PlainPass -i C:\setup\dropdb.sql
+
 # Setup SharePoint
 
 Write-Host " - Enabling Sharepoint Powershell commandlets..."

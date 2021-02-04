@@ -17,6 +17,9 @@ else {
     $quiet = New-NetIPAddress -IPAddress $ServerIP -PrefixLength 24 -InterfaceAlias $Ethernet2
 }
 
+# Set high priority of local interface to improve domain join
+Set-NetIPInterface -InterfaceAlias $Ethernet2 -InterfaceMetric 1
+
 # Let test box ping us
 netsh advfirewall firewall add rule name="Allow incoming ICMP" protocol=icmpv4 dir=in action=allow
 

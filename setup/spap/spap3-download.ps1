@@ -29,6 +29,8 @@ $DownloadURLs = (
   "https://download.microsoft.com/download/6/F/9/6F9673B1-87D1-46C4-BF04-95F24C3EB9DA/enu_netfx/Windows8_1-KB3045563-x64_msu/Windows8.1-KB3045563-x64.msu",
   # .NET framework 4.6
   "https://download.microsoft.com/download/C/3/A/C3A5200B-D33C-47E9-9D70-2F7C65DAAD94/NDP46-KB3045557-x86-x64-AllOS-ENU.exe",
+  # KB3115299 - fixes New-SPCConfigurationDatabase failure getting SPFarm user from AD: RPC server is unavailable
+  "https://download.microsoft.com/download/2/6/A/26A556BB-81B8-4946-98E7-60E3AEDEB841/sts2016-kb3115299-fullfile-x64-glb.exe",
 
   ## Extra downloads:
 
