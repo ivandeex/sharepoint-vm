@@ -3,6 +3,12 @@ Start-Transcript -Append -Path C:\setup.log
 Set-PSDebug -Strict # -Trace 2
 Write-Host "Running spap3-download ..."
 
+# Check that joined AD
+if (!(Test-Path C:\setup\join)) {
+    Write-Host "Failed to join Domain. STOP!"
+    exit 1
+}
+
 # Sharepoint Server 2016 RTM packages
 $DownloadURLs = (
   # SQL ODBC
@@ -111,17 +117,6 @@ $quiet = New-ItemProperty `
             -Path HKLM:Software\Microsoft\Windows\CurrentVersion\policies\system `
             -Name EnableLUA `
             -Value 0 -PropertyType DWord -Force
-
-# Run next steps as SQL Admin user in AD Domain
-$PlainPass = (Get-Content C:\setup\pass.txt -First 1).Trim()
-$RegPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
-Set-ItemProperty $RegPath 'DefaultUsername' -Value $AdminUser -Type String
-Set-ItemProperty $RegPath 'DefaultPassword' -Value $PlainPass -Type String
-Set-ItemProperty $RegPath 'DefaultDomainName' -Value $NetBiosName -Type String
-
-# Run script on next logon
-$RunOnce = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce'
-Set-ItemProperty -Path $RunOnce -Name 'SP-Baseline' -Value 'C:\Windows\System32\cmd.exe /c C:\setup\spap4-features.bat'
 
 # Reboot and continue
 Write-Host "- Sharepoint packages downloaded"

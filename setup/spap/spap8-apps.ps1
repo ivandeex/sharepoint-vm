@@ -1,7 +1,38 @@
-# Logging
-Start-Transcript -Append -Path C:\setup.log
+# Options
+param([switch]$Elevate, [switch]$Reboot)
 Set-PSDebug -Strict # -Trace 2
-Write-Host "Running spap8-apps ..."
+$Script = 'spap8-apps'
+
+if (Test-Path "C:\setup\${Script}.done") {
+    Write-Host "${Script} already done. Retrying."
+    #exit 0
+}
+
+if ($Elevate) {
+    Start-Transcript -Append -Path C:\setup.log
+    Write-Host "Running ${Script} elevated ..."
+    $Args = "-NoProfile -ExecutionPolicy Bypass -File C:\setup\${Script}.ps1"
+    $Action = New-ScheduledTaskAction -Execute powershell.exe -Argument $Args
+    $Principal = New-ScheduledTaskPrincipal -UserID 'NT AUTHORITY\SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+    $Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(3)
+    $Task = Register-ScheduledTask $Script -Action $Action -Trigger $Trigger -Principal $Principal
+    do {
+        Start-Sleep -Seconds 10
+        $ExitCode = (Get-ScheduledTaskInfo $Script).LastTaskResult
+    } until ($ExitCode -ne 267009)
+    Unregister-ScheduledTask $Script -Confirm:$false
+    Write-Host "Task ${Script} finished with code ${ExitCode}. See log for details."
+    Get-Content -Path "C:\${Script}.log"
+    if ($ExitCode -eq 0 -and $Reboot) {
+        Start-Sleep -Seconds 5
+        Restart-Computer -Force
+    }
+    exit $ExitCode
+}
+
+# Logging
+Start-Transcript -Path "C:\${Script}.log"
+Write-Host "Running ${Script} ..."
 
 # Parameters
 $ServerName = 'spap'
@@ -18,7 +49,9 @@ $PlainPass = (Get-Content C:\setup\pass.txt -First 1).Trim()
 $SecurePass = (ConvertTo-SecureString $PlainPass -AsPlaintext -Force)
 $Credential = (New-Object System.Management.Automation.PSCredential $FarmAcc,$SecurePass)
 
+$DBAdmin = 'spAdmin'
 $DBServer = (Get-Content C:\setup\ip_msql.txt -First 1).Trim()
+$CredDB = (New-Object System.Management.Automation.PsCredential $DBAdmin,$SecurePass)
 
 $EnvName = $NetBiosName
 $env:USERDNSDOMAIN = $DomainName
@@ -51,6 +84,8 @@ if (!$MetaSvcApp) {
     New-SPMetadataServiceApplication `
         -Name 'MetadataServiceApp' `
         -ApplicationPool $AppPool.Name `
+        -DatabaseServer $DBServer `
+        -DatabaseCredentials $CredDB `
         -DatabaseName 'sp.MetadataDB'
 }
 
@@ -62,6 +97,7 @@ if (!$SecureStoreApp) {
         -ApplicationPool $AppPool.Name `
         -AuditingEnabled:$false `
         -DatabaseServer $DBServer `
+        -DatabaseCredentials $CredDB `
         -DatabaseName 'sp.SecureStore'
 }
 
@@ -235,17 +271,10 @@ Set-ItemProperty `
     -Path 'HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A8-37EF-4b3f-8CFC-4F3A74704073}' `
     -Name 'IsInstalled' -Value 0 -Force
 
-# Disable Autologon
-$RegPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
-Remove-ItemProperty -Path $RegPath -Name 'ForceAutoLogon'
-Remove-ItemProperty -Path $RegPath -Name 'AutoAdminLogon'
-Remove-ItemProperty -Path $RegPath -Name 'AutoLogonCount'
-Remove-ItemProperty -Path $RegPath -Name 'DefaultUsername'
-Remove-ItemProperty -Path $RegPath -Name 'DefaultPassword'
-Remove-ItemProperty -Path $RegPath -Name 'DefaultDomainName'
-
 # All done!
 Write-Host "Applications configured!"
-Set-Content -Path C:\setup\done -Value done
-Start-Sleep -Seconds 5
-Restart-Computer -Force
+Set-Content -Path "C:\setup\${Script}.done" -Value done
+if ($Reboot) {
+    Start-Sleep -Seconds 5
+    Restart-Computer -Force
+}

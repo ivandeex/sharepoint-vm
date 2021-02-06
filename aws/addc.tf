@@ -51,27 +51,27 @@ resource "aws_instance" "addc" {
     destination = "C:\\setup\\ip_addc.txt"
   }
 
-  # Setup Active Directory
+  # Prepare networking
   provisioner "remote-exec" {
     inline = ["C:\\setup\\addc1-hostname.bat"]
   }
 
-  # Wait for completion
   provisioner "local-exec" {
-    command = "sleep 360"
+    command = "sleep 90"
   }
 
+  # Setup Active Directory
   provisioner "remote-exec" {
-    inline     = ["C:\\setup\\wait.bat"]
-    on_failure = continue
+    inline = ["C:\\setup\\addc2-init.bat"]
   }
 
   provisioner "local-exec" {
-    command = "sleep 120"
+    command = "sleep 150"
   }
 
+  # Configure AD Users
   provisioner "remote-exec" {
-    inline = ["C:\\setup\\wait.bat"]
+    inline = ["C:\\setup\\addc3-users.bat"]
   }
 }
 

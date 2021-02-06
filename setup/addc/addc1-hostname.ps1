@@ -23,23 +23,6 @@ Set-NetIPInterface -InterfaceAlias $Ethernet2 -InterfaceMetric 1
 # Let test box ping us
 netsh advfirewall firewall add rule name="Allow incoming ICMP" protocol=icmpv4 dir=in action=allow
 
-# Configure Autologon
-$RegPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
-$PlainPass = (Get-Content C:\setup\pass.txt -First 1).Trim()
-$AutoLoginUser = 'Administrator'
-$AutoLoginPass = $PlainPass
-
-Set-ItemProperty $RegPath 'ForceAutoLogon' -Value '1' -Type String
-Set-ItemProperty $RegPath 'AutoAdminLogon' -Value '1' -Type String
-Set-ItemProperty $RegPath 'AutoLogonCount' -Value '10' -Type DWord
-Set-ItemProperty $RegPath 'DefaultUsername' -Value $AutoLoginUser -Type String
-Set-ItemProperty $RegPath 'DefaultPassword' -Value $AutoLoginPass -Type String
-Set-ItemProperty $RegPath 'DefaultDomainName' -Value '' -Type String
-
-# Run script on next logon
-$RunOnce = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce'
-Set-ItemProperty -Path $RunOnce -Name 'AD-Init' -Value 'C:\Windows\System32\cmd.exe /c C:\setup\addc2-init.bat'
-
 # Rename Computer
 $ServerName = 'addc'
 if ($env:COMPUTERNAME -ne $ServerName) {

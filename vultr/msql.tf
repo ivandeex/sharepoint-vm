@@ -68,30 +68,55 @@ resource "vultr_instance" "msql" {
   }
 
   provisioner "local-exec" {
-    command = "sleep 90"
+    command = "sleep 60"
   }
 
-  # Setup SQL Server
+  # Prepare networking
   provisioner "remote-exec" {
     inline = ["C:\\setup\\msql1-hostname.bat"]
   }
 
-  # Wait for completion
   provisioner "local-exec" {
-    command = "sleep 360"
+    command = "sleep 60"
+  }
+
+  # Join AD Domain
+  provisioner "remote-exec" {
+    inline     = ["C:\\setup\\msql2-join1.bat"]
+    on_failure = continue # the join commandlet reboots instantly
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
   }
 
   provisioner "remote-exec" {
-    inline     = ["C:\\setup\\wait.bat"]
+    inline     = ["C:\\setup\\msql2-join2.bat"]
+    on_failure = continue # the join commandlet reboots instantly
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  # Install SQL Server
+  provisioner "remote-exec" {
+    inline = ["C:\\setup\\msql3-install.bat"]
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  # Configure SQL Server
+  provisioner "remote-exec" {
+    inline = ["C:\\setup\\msql4-init.bat"]
+  }
+
+  # Reboot computer
+  provisioner "remote-exec" {
+    inline     = ["shutdown.exe /r"]
     on_failure = continue
-  }
-
-  provisioner "local-exec" {
-    command = "sleep 120"
-  }
-
-  provisioner "remote-exec" {
-    inline = ["C:\\setup\\wait.bat"]
   }
 }
 

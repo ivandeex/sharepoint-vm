@@ -83,30 +83,136 @@ resource "vultr_instance" "spap" {
   }
 
   provisioner "local-exec" {
-    command = "sleep 90"
+    command = "sleep 60"
   }
 
-  # Setup Sharepoint
+  # Prepare networking
   provisioner "remote-exec" {
     inline = ["C:\\setup\\spap1-hostname.bat"]
   }
 
-  # Wait for completion
   provisioner "local-exec" {
-    command = "sleep 1200"
+    command = "sleep 60"
+  }
+
+  # Join AD Domain
+  provisioner "remote-exec" {
+    inline     = ["C:\\setup\\spap2-join1.bat"]
+    on_failure = continue # the join commandlet reboots instantly
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
   }
 
   provisioner "remote-exec" {
-    inline     = ["C:\\setup\\wait.bat"]
-    on_failure = continue
+    inline     = ["C:\\setup\\spap2-join2.bat"]
+    on_failure = continue # the join commandlet reboots instantly
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  # Download prerequisites and prepare Sharepoint Admin user
+  provisioner "remote-exec" {
+    inline = ["C:\\setup\\spap3-download.bat"]
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  # Install Windows Features
+  provisioner "remote-exec" {
+    inline = ["C:\\setup\\spap4-features.bat"]
   }
 
   provisioner "local-exec" {
     command = "sleep 120"
   }
 
+  # Install Prerequisites
   provisioner "remote-exec" {
-    inline = ["C:\\setup\\wait.bat"]
+    inline = ["C:\\setup\\spap5-prereq.bat"]
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+}
+
+resource "null_resource" "spap_install" {
+  # This step is separate because install sporadically fails with error 1603
+  depends_on = [vultr_instance.spap, vultr_instance.msql]
+
+  connection {
+    type     = "winrm"
+    user     = "Administrator"
+    password = var.admin_password
+    host     = vultr_instance.spap.main_ip
+    timeout  = "20m"
+  }
+
+  # Install Sharepoint
+  provisioner "remote-exec" {
+    inline     = ["C:\\setup\\spap6-install.bat"]
+    on_failure = continue
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  # Retry the install (mitigate sporadic error 1603)
+  provisioner "remote-exec" {
+    inline = ["C:\\setup\\spap6-install.bat"]
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  # Patch Sharepoint
+  provisioner "remote-exec" {
+    inline = ["C:\\setup\\spap6-patch.bat"]
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+}
+
+resource "null_resource" "spap_apps" {
+  # This step is separate because New-SPConfigurationDatabase sporadically fails
+  depends_on = [vultr_instance.spap, vultr_instance.msql, null_resource.spap_install]
+
+  connection {
+    type     = "winrm"
+    user     = "Administrator"
+    password = var.admin_password
+    host     = vultr_instance.spap.main_ip
+    timeout  = "30m"
+  }
+
+  # Create Farm
+  provisioner "remote-exec" {
+    inline = ["C:\\setup\\spap7-farm.bat"]
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  # Configure Applicatsions
+  provisioner "remote-exec" {
+    inline = ["C:\\setup\\spap8-apps.bat"]
+  }
+
+  # Reboot computer
+  provisioner "remote-exec" {
+    inline     = ["shutdown.exe /r"]
+    on_failure = continue
   }
 }
 

@@ -71,10 +71,6 @@ Install-WindowsFeature `
   InkAndHandwritingServices,`
   Xps-Viewer
 
-# Run script on next logon
-$RunOnce = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce'
-Set-ItemProperty -Path $RunOnce -Name 'SP-Prereq' -Value 'C:\Windows\System32\cmd.exe /c C:\setup\spap5-prereq.bat'
-
 # Reboot and continue
 Write-Host "- Windows Features installed"
 Start-Sleep -Seconds 5

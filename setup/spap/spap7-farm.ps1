@@ -1,7 +1,38 @@
-# Logging
-Start-Transcript -Append -Path C:\setup.log
+# Options
+param([switch]$Elevate, [switch]$Reboot)
 Set-PSDebug -Strict # -Trace 2
-Write-Host "Running spap7-farm ..."
+$Script = 'spap7-farm'
+
+if (Test-Path "C:\setup\${Script}.done") {
+    Write-Host "${Script} already done"
+    exit 0
+}
+
+if ($Elevate) {
+    Start-Transcript -Append -Path C:\setup.log
+    Write-Host "Running ${Script} elevated ..."
+    $Args = "-NoProfile -ExecutionPolicy Bypass -File C:\setup\${Script}.ps1"
+    $Action = New-ScheduledTaskAction -Execute powershell.exe -Argument $Args
+    $Principal = New-ScheduledTaskPrincipal -UserID 'NT AUTHORITY\SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+    $Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(3)
+    $Task = Register-ScheduledTask $Script -Action $Action -Trigger $Trigger -Principal $Principal
+    do {
+        Start-Sleep -Seconds 10
+        $ExitCode = (Get-ScheduledTaskInfo $Script).LastTaskResult
+    } until ($ExitCode -ne 267009)
+    Unregister-ScheduledTask $Script -Confirm:$false
+    Write-Host "Task ${Script} finished with code ${ExitCode}. See log for details."
+    Get-Content -Path "C:\${Script}.log"
+    if ($ExitCode -eq 0 -and $Reboot) {
+        Start-Sleep -Seconds 5
+        Restart-Computer -Force
+    }
+    exit $ExitCode
+}
+
+# Logging
+Start-Transcript -Path "C:\${Script}.log"
+Write-Host "Running ${Script} ..."
 
 # Parameters
 $ServerName = 'spap'
@@ -14,11 +45,14 @@ $FarmAcc = "${NetBiosName}\${FarmAccName}"
 $ConfigDB = 'spFarmConfiguration'
 $CentralAdminContentDB = 'spCentralAdministration'
 $CentralAdminPort = '2016'
-$DBServer = (Get-Content C:\setup\ip_msql.txt -First 1).Trim()
 
 $PlainPass = (Get-Content C:\setup\pass.txt -First 1).Trim()
 $SecurePass = (ConvertTo-SecureString $PlainPass -AsPlaintext -Force)
 $CredFarmAcc = (New-Object System.Management.Automation.PsCredential $FarmAcc,$SecurePass)
+
+$DBAdmin = 'spAdmin'
+$DBServer = (Get-Content C:\setup\ip_msql.txt -First 1).Trim()
+$CredDB = (New-Object System.Management.Automation.PsCredential $DBAdmin,$SecurePass)
 
 # Verify that DC is accessible
 Import-Module ActiveDirectory
@@ -55,6 +89,7 @@ Write-Host " - Creating configuration database......"
 New-SPConfigurationDatabase `
     -DatabaseName $ConfigDB `
     -DatabaseServer $DBServer `
+    -DatabaseCredentials $CredDB `
     -AdministrationContentDatabaseName $CentralAdminContentDB `
     -Passphrase $SecurePass `
     -FarmCredentials $CredFarmAcc `
@@ -101,11 +136,10 @@ $NetBiosName = ($DomainName -replace '[.].*','')
 $UpperDC = $DC.ToUpper()
 $RootCA = "ldap:${DC}.${DomainName}\${NetBiosName}-${UpperDC}-CA"
 
-# Run script on next logon
-$RunOnce = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce'
-Set-ItemProperty -Path $RunOnce -Name 'SP-Post' -Value 'C:\Windows\System32\cmd.exe /c C:\setup\spap8-apps.bat'
-
 # Reboot and continue
 Write-Host "- Farm Created."
-Start-Sleep -Seconds 5
-Restart-Computer -Force
+Set-Content -Path "C:\setup\${Script}.done" -Value done
+if ($Reboot) {
+    Start-Sleep -Seconds 5
+    Restart-Computer -Force
+}

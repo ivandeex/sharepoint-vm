@@ -19,10 +19,6 @@ $NetBiosName = ($DomainName -replace '[.].*','')
 $PlainPass = (Get-Content C:\setup\pass.txt -First 1).Trim()
 $SecurePass = (ConvertTo-SecureString $PlainPass -AsPlaintext -Force)
 
-# Run script on next logon
-$RunOnce = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce'
-Set-ItemProperty -Path $RunOnce -Name 'AD-Users' -Value 'C:\Windows\System32\cmd.exe /c C:\setup\addc3-users.bat'
-
 # Install Active Directory
 Write-Host "Windows Server 2012 R2 - Active Directory Installation"
 
@@ -44,5 +40,3 @@ Install-ADDSForest `
 
 # Reboot as requested by Install-Forest
 Write-Host " - Forest Done. Rebooting."
-Start-Sleep -Seconds 5
-# Restart was requested above

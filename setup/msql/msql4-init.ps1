@@ -48,7 +48,7 @@ function Add-SQLAccountToSQLRole ([String]$Server, [String]$Username, [String]$P
     # Check if User already exists
     $SrvUser = (New-Object -TypeName Microsoft.SqlServer.Management.Smo.Login $Server,$Username)
     if (! $Srv.Logins.Contains($Username)) {
-        $SrvUser.LoginType = 'WindowsUser'
+        $SrvUser.LoginType = 'SqlLogin'
         $SrvUser.PasswordExpirationEnabled = $false
         $SrvUser.Create($Password)
     }
@@ -60,9 +60,9 @@ function Add-SQLAccountToSQLRole ([String]$Server, [String]$Username, [String]$P
 }
 
 # Add User and Roles
-Add-SQLAccountToSQLRole $Server $DomainUser $PlainPass 'dbcreator'
-Add-SQLAccountToSQLRole $Server $DomainUser $PlainPass 'securityadmin'
-Add-SQLAccountToSQLRole $Server $DomainUser $PlainPass 'sysadmin'
+Add-SQLAccountToSQLRole $Server $AdminUser $PlainPass 'dbcreator'
+Add-SQLAccountToSQLRole $Server $AdminUser $PlainPass 'securityadmin'
+Add-SQLAccountToSQLRole $Server $AdminUser $PlainPass 'sysadmin'
 
 # Disable IE Enhanced Security for Admin and User
 Set-ItemProperty `
@@ -72,17 +72,5 @@ Set-ItemProperty `
     -Path 'HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A8-37EF-4b3f-8CFC-4F3A74704073}' `
     -Name 'IsInstalled' -Value 0 -Force
 
-# Disable Autologon
-$RegPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
-Remove-ItemProperty -Path $RegPath -Name 'ForceAutoLogon'
-Remove-ItemProperty -Path $RegPath -Name 'AutoAdminLogon'
-Remove-ItemProperty -Path $RegPath -Name 'AutoLogonCount'
-Remove-ItemProperty -Path $RegPath -Name 'DefaultUsername'
-Remove-ItemProperty -Path $RegPath -Name 'DefaultPassword'
-Remove-ItemProperty -Path $RegPath -Name 'DefaultDomainName'
-
 # All done!
 Write-Host "SQL Server configured!"
-Set-Content -Path C:\setup\done -Value done
-Start-Sleep -Seconds 5
-Restart-Computer -Force

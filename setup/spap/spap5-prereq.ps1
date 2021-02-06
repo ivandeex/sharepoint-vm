@@ -3,10 +3,6 @@ Start-Transcript -Append -Path C:\setup.log
 Set-PSDebug -Strict # -Trace 2
 Write-Host "Running spap5-prereq ..."
 
-# Run script on next logon
-$RunOnce = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce'
-Set-ItemProperty -Path $RunOnce -Name 'SP-Install' -Value 'C:\Windows\System32\cmd.exe /c C:\setup\spap6-install.bat'
-
 # Mount ISO
 $PrereqDir = 'C:\setup\prereq'
 $ImagePath = "${PrereqDir}\officeserver.img"
@@ -40,5 +36,5 @@ if ($Method -eq 2) {
 }
 
 # Reboot and continue
-Start-Sleep -Seconds 5
+Start-Sleep -Seconds 10  # Wait a little more to fix AWS
 Restart-Computer -Force

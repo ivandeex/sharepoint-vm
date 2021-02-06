@@ -20,9 +20,9 @@ resource "aws_instance" "msql" {
     timeout  = "15m"
   }
 
-  # Wait for instance setup
+  # Wait for instance setup (longer than usual due to SQL Server setup)
   provisioner "local-exec" {
-    command = "sleep 180"
+    command = "sleep 390"
   }
 
   # Copy scripts and settings to instance
@@ -56,27 +56,52 @@ resource "aws_instance" "msql" {
     destination = "C:\\setup\\ip_msql.txt"
   }
 
-  # Setup SQL Server
+  # Prepare networking
   provisioner "remote-exec" {
     inline = ["C:\\setup\\msql1-hostname.bat"]
   }
 
-  # Wait for completion
   provisioner "local-exec" {
-    command = "sleep 180"
+    command = "sleep 90"
+  }
+
+  # Join AD Domain
+  provisioner "remote-exec" {
+    inline     = ["C:\\setup\\msql2-join1.bat"]
+    on_failure = continue # the join commandlet reboots instantly
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 90"
   }
 
   provisioner "remote-exec" {
-    inline     = ["C:\\setup\\wait.bat"]
+    inline     = ["C:\\setup\\msql2-join2.bat"]
+    on_failure = continue # the join commandlet reboots instantly
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  # Install SQL Server
+  provisioner "remote-exec" {
+    inline = ["C:\\setup\\msql3-install.bat"]
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  # Configure SQL Server
+  provisioner "remote-exec" {
+    inline = ["C:\\setup\\msql4-init.bat"]
+  }
+
+  # Reboot computer
+  provisioner "remote-exec" {
+    inline     = ["shutdown.exe /r"]
     on_failure = continue
-  }
-
-  provisioner "local-exec" {
-    command = "sleep 120"
-  }
-
-  provisioner "remote-exec" {
-    inline = ["C:\\setup\\wait.bat"]
   }
 }
 

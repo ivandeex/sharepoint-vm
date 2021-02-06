@@ -24,22 +24,17 @@ $SecurePass = (ConvertTo-SecureString $PlainPass -AsPlainText -Force)
 $Credential = (New-Object -TypeName System.Management.Automation.PSCredential `
                           -ArgumentList $DomainUser,$SecurePass)
 
-# Run script on next logon
-$RunOnce = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce'
-Set-ItemProperty -Path $RunOnce -Name 'SP-Deps' -Value 'C:\Windows\System32\cmd.exe /c C:\setup\spap3-download.bat'
-
 # Join computer to domain
 foreach ($i in 1..2) {
     Write-Host "Join AD domain (attempt $i) ..."
+    Set-Content -Path C:\setup\join -Value join
     Add-Computer -DomainName $DomainName -OUPath $OUPath -Credential $Credential `
                  -Options AccountCreate -Restart -ErrorAction Continue
     Start-Sleep -Seconds 10
 }
 
 # Reboot and try again
-Remove-ItemProperty -Path $RunOnce -Name 'SP-Deps'
-Set-ItemProperty -Path $RunOnce -Name 'AD-Join' -Value 'C:\Windows\System32\cmd.exe /c C:\setup\spap2-join2.bat'
-
+Remove-Item -Path C:\setup\join -ErrorAction SilentlyContinue
 Write-Host "Failed to join, will try again after restart"
 Start-Sleep -Seconds 5
 Restart-Computer -Force

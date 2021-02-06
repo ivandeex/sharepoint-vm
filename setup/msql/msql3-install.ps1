@@ -3,6 +3,12 @@ Start-Transcript -Append -Path C:\setup.log
 Set-PSDebug -Strict # -Trace 2
 Write-Host "Running msql3-install ..."
 
+# Check that joined AD
+if (!(Test-Path C:\setup\join)) {
+    Write-Host "Failed to join Domain. STOP!"
+    exit 1
+}
+
 # SQL Server 2014 Express packages
 $DownloadURLs = (
   # SQL Server 2014 Express
@@ -65,12 +71,30 @@ else {
     Write-Host "Installing SQL Server 2014 Express ..."
     $ConfigFile = 'C:\setup\SQLServerConfiguration.ini'
     $SetupArgs = "/ConfigurationFile=${ConfigFile} /IAcceptSQLServerLicenseTerms"
-    $Cmd = (Start-Process "${SqlSetupDir}\setup.exe" -ArgumentList $SetupArgs -PassThru -Wait)
-    $ExitCode = $Cmd.ExitCode
+    $Action = New-ScheduledTaskAction -Execute "${SqlSetupDir}\setup.exe" -Argument $SetupArgs
+    $TaskName = 'Install SQL Server'
+    # Ensure highest privileges without interactive login
+    $Principal = New-ScheduledTaskPrincipal `
+                    -UserID 'NT AUTHORITY\SYSTEM' `
+                    -LogonType ServiceAccount `
+                    -RunLevel Highest
+    $Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(3)
+    $Task = Register-ScheduledTask `
+                    -TaskName $TaskName `
+                    -Action $Action `
+                    -Trigger $Trigger `
+                    -Principal $Principal
+    do {
+        Start-Sleep -Seconds 10
+        $ExitCode = (Get-ScheduledTaskInfo $TaskName).LastTaskResult
+    } until ($ExitCode -ne 267009)
+
     if ($ExitCode -ne 0) {
         Write-Host "Setup failed with code ${ExitCode}!"
         exit 1
     }
+    Unregister-ScheduledTask $TaskName -Confirm:$false
+    Write-Host "Setup Successful"
 }
 
 # Install sqlcmd.exe for manual operations
@@ -87,11 +111,12 @@ net localgroup Administrators $AdminUser /add
 #net localgroup Administrators $DomainUser /add
 #net localgroup Administrators "$DomainGroup" /add
 
-# Run script on next logon
-$RunOnce = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce'
-Set-ItemProperty -Path $RunOnce -Name 'SQL-Init' -Value 'C:\Windows\System32\cmd.exe /c C:\setup\msql4-init.bat'
+# Enable Mixed (Windows and SQL) login mode
+Set-ItemProperty `
+    -Path 'HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL12.MSSQLSERVER\MSSQLServer' `
+    -Name 'LoginMode' -Value 2 -Type DWord -Force
 
 # Reboot and continue
 Write-Host "- SQL Server installed"
-Start-Sleep -Seconds 5
+Start-Sleep -Seconds 10  # Wait a little more to fix AWS
 Restart-Computer -Force

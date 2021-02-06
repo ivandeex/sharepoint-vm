@@ -3,6 +3,12 @@ Start-Transcript -Append -Path C:\setup.log
 Set-PSDebug -Strict # -Trace 2
 Write-Host "Running msql2-join2 ..."
 
+# Check that already joined
+if (Test-Path C:\setup\join) {
+    Write-Host "Already joined. Continue."
+    exit 0
+}
+
 # Credentials for Domain join
 $OrgUnit = 'UsersSP2016'
 $DomainName = (Get-Content C:\setup\domain.txt -First 1).Trim()
@@ -18,13 +24,10 @@ $SecurePass = (ConvertTo-SecureString $PlainPass -AsPlainText -Force)
 $Credential = (New-Object -TypeName System.Management.Automation.PSCredential `
                           -ArgumentList $DomainUser,$SecurePass)
 
-# Run script on next logon
-$RunOnce = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce'
-Set-ItemProperty -Path $RunOnce -Name 'SQL-Init' -Value 'C:\Windows\System32\cmd.exe /c C:\setup\msql3-install.bat'
-
 # Join computer to domain
 foreach ($i in 1..2) {
     Write-Host "Retry joining AD domain (attempt $i) ..."
+    Set-Content -Path C:\setup\join -Value join
     Add-Computer -DomainName $DomainName -OUPath $OUPath -Credential $Credential `
                  -Options AccountCreate -Restart -ErrorAction Continue
     Start-Sleep -Seconds 10
@@ -32,4 +35,5 @@ foreach ($i in 1..2) {
 
 # Failed to join. Abort sequence.
 Write-Host "Failed to join Domain. STOP!"
-Remove-ItemProperty -Path $RunOnce -Name 'SQL-Init'
+Remove-Item -Path C:\setup\join -ErrorAction SilentlyContinue
+exit 1
