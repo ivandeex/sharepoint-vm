@@ -219,3 +219,15 @@ resource "null_resource" "spap_apps" {
 output "spap_public_ip" {
   value = vultr_instance.spap.main_ip
 }
+
+output "web_ip" {
+  value = local.spap_localip
+}
+
+output "web_url" {
+  value = "http://spap.${var.domain_name}/sites/test/Shared%20Documents"
+}
+
+output "web_user" {
+  value = "${replace(var.domain_name, "/[.].*/", "")}\\spadmin"
+}
