@@ -46,11 +46,22 @@ resource "aws_instance" "msql" {
     destination = "C:\\setup\\dropbox_url.txt"
   }
 
+  # Retry this step as terraform sometimes skips files
   provisioner "file" {
     source      = "../setup/msql/"
     destination = "C:\\setup"
   }
 
+  provisioner "local-exec" {
+    command = "sleep 10"
+  }
+
+  provisioner "file" {
+    source      = "../setup/msql/"
+    destination = "C:\\setup"
+  }
+
+  # Configure IP addresses
   provisioner "file" {
     content     = local.addc_localip
     destination = "C:\\setup\\ip_addc.txt"

@@ -42,11 +42,22 @@ resource "vultr_instance" "addc" {
     destination = "C:\\setup\\domain.txt"
   }
 
+  # Retry this step as terraform sometimes skips files
   provisioner "file" {
     source      = "../setup/addc/"
     destination = "C:\\setup"
   }
 
+  provisioner "local-exec" {
+    command = "sleep 10"
+  }
+
+  provisioner "file" {
+    source      = "../setup/addc/"
+    destination = "C:\\setup"
+  }
+
+  # Configure IP addresses
   provisioner "file" {
     content     = local.addc_localip
     destination = "C:\\setup\\ip_addc.txt"
@@ -67,7 +78,7 @@ resource "vultr_instance" "addc" {
   }
 
   provisioner "local-exec" {
-    command = "sleep 90"
+    command = "sleep 120" # delay for DC to warm up
   }
 
   # Configure AD Users

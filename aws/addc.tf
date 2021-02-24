@@ -41,11 +41,22 @@ resource "aws_instance" "addc" {
     destination = "C:\\setup\\domain.txt"
   }
 
+  # Retry this step as terraform sometimes skips files
   provisioner "file" {
     source      = "../setup/addc/"
     destination = "C:\\setup"
   }
 
+  provisioner "local-exec" {
+    command = "sleep 10"
+  }
+
+  provisioner "file" {
+    source      = "../setup/addc/"
+    destination = "C:\\setup"
+  }
+
+  # Configure IP addresses
   provisioner "file" {
     content     = local.addc_localip
     destination = "C:\\setup\\ip_addc.txt"
@@ -66,7 +77,7 @@ resource "aws_instance" "addc" {
   }
 
   provisioner "local-exec" {
-    command = "sleep 150"
+    command = "sleep 150" # delay for DC to warm up
   }
 
   # Configure AD Users

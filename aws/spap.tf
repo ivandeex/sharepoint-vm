@@ -18,7 +18,8 @@ resource "aws_instance" "spap" {
     delete_on_termination = true
   }
 
-  depends_on = [aws_instance.addc, aws_instance.msql]
+  # Do not depend on MSQL yet, start earlier
+  depends_on = [aws_instance.addc]
 
   connection {
     type     = "winrm"
@@ -54,11 +55,22 @@ resource "aws_instance" "spap" {
     destination = "C:\\setup\\dropbox_url.txt"
   }
 
+  # Retry this step as terraform sometimes skips files
   provisioner "file" {
     source      = "../setup/spap/"
     destination = "C:\\setup"
   }
 
+  provisioner "local-exec" {
+    command = "sleep 10"
+  }
+
+  provisioner "file" {
+    source      = "../setup/spap/"
+    destination = "C:\\setup"
+  }
+
+  # Configure IP addresses
   provisioner "file" {
     content     = local.addc_localip
     destination = "C:\\setup\\ip_addc.txt"
@@ -132,6 +144,15 @@ resource "aws_instance" "spap" {
 
   # Install Prerequisites
   provisioner "remote-exec" {
+    inline     = ["C:\\setup\\spap5-prereq.bat"]
+    on_failure = continue # retry failures
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  provisioner "remote-exec" { # try again
     inline = ["C:\\setup\\spap5-prereq.bat"]
   }
 
@@ -142,7 +163,8 @@ resource "aws_instance" "spap" {
 
 resource "null_resource" "spap_install" {
   # This step is separate because install sporadically fails with error 1603
-  depends_on = [aws_instance.spap, aws_instance.msql]
+  # MSQL isn't used yet
+  depends_on = [aws_instance.spap]
 
   connection {
     type     = "winrm"
@@ -183,6 +205,7 @@ resource "null_resource" "spap_install" {
 
 resource "null_resource" "spap_apps" {
   # This step is separate because New-SPConfigurationDatabase sporadically fails
+  # Also, it requires MSQL
   depends_on = [aws_instance.spap, aws_instance.msql, null_resource.spap_install]
 
   connection {

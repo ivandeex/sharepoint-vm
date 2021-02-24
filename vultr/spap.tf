@@ -11,7 +11,8 @@ resource "vultr_instance" "spap" {
   enable_private_network = true
   activation_email       = false
 
-  depends_on = [vultr_instance.addc, vultr_instance.msql]
+  # Do not depend on MSQL yet, start earlier
+  depends_on = [vultr_instance.addc]
 
   connection {
     type     = "winrm"
@@ -47,11 +48,22 @@ resource "vultr_instance" "spap" {
     destination = "C:\\setup\\dropbox_url.txt"
   }
 
+  # Retry this step as terraform sometimes skips files
   provisioner "file" {
     source      = "../setup/spap/"
     destination = "C:\\setup"
   }
 
+  provisioner "local-exec" {
+    command = "sleep 10"
+  }
+
+  provisioner "file" {
+    source      = "../setup/spap/"
+    destination = "C:\\setup"
+  }
+
+  # Configure IP addresses
   provisioner "file" {
     content     = local.addc_localip
     destination = "C:\\setup\\ip_addc.txt"
@@ -139,6 +151,15 @@ resource "vultr_instance" "spap" {
 
   # Install Prerequisites
   provisioner "remote-exec" {
+    inline     = ["C:\\setup\\spap5-prereq.bat"]
+    on_failure = continue # retry failures
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  provisioner "remote-exec" { # try again
     inline = ["C:\\setup\\spap5-prereq.bat"]
   }
 
@@ -149,7 +170,8 @@ resource "vultr_instance" "spap" {
 
 resource "null_resource" "spap_install" {
   # This step is separate because install sporadically fails with error 1603
-  depends_on = [vultr_instance.spap, vultr_instance.msql]
+  # MSQL isn't used yet
+  depends_on = [vultr_instance.spap]
 
   connection {
     type     = "winrm"
@@ -190,6 +212,7 @@ resource "null_resource" "spap_install" {
 
 resource "null_resource" "spap_apps" {
   # This step is separate because New-SPConfigurationDatabase sporadically fails
+  # Also, it requires MSQL
   depends_on = [vultr_instance.spap, vultr_instance.msql, null_resource.spap_install]
 
   connection {
@@ -197,7 +220,7 @@ resource "null_resource" "spap_apps" {
     user     = "Administrator"
     password = var.admin_password
     host     = vultr_instance.spap.main_ip
-    timeout  = "30m"
+    timeout  = "40m"
   }
 
   # Create Farm

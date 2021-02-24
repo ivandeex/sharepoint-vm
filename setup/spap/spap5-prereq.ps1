@@ -3,6 +3,11 @@ Start-Transcript -Append -Path C:\setup.log
 Set-PSDebug -Strict # -Trace 2
 Write-Host "Running spap5-prereq ..."
 
+if (Test-Path C:\setup\prereqsok) {
+    Write-Host "Prerequisites already installed"
+    exit 0
+}
+
 # Mount ISO
 $PrereqDir = 'C:\setup\prereq'
 $ImagePath = "${PrereqDir}\officeserver.img"
@@ -36,5 +41,6 @@ if ($Method -eq 2) {
 }
 
 # Reboot and continue
+Set-Content -Path C:\setup\prereqsok -Value prereqsok
 Start-Sleep -Seconds 10  # Wait a little more to fix AWS
 Restart-Computer -Force

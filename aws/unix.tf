@@ -23,7 +23,7 @@ resource "aws_instance" "unix" {
 
   # Wait for instance setup
   provisioner "local-exec" {
-    command = "sleep 10"
+    command = "sleep 60"
   }
 
   # Upload settings and run setup

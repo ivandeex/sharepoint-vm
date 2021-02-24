@@ -23,7 +23,7 @@ resource "vultr_instance" "msql" {
 
   # Wait for instance setup
   provisioner "local-exec" {
-    command = "sleep 120"
+    command = "sleep 150" # add some shift vs SPAP
   }
 
   # Copy scripts and settings to instance
@@ -47,11 +47,22 @@ resource "vultr_instance" "msql" {
     destination = "C:\\setup\\dropbox_url.txt"
   }
 
+  # Retry this step as terraform sometimes skips files
   provisioner "file" {
     source      = "../setup/msql/"
     destination = "C:\\setup"
   }
 
+  provisioner "local-exec" {
+    command = "sleep 10"
+  }
+
+  provisioner "file" {
+    source      = "../setup/msql/"
+    destination = "C:\\setup"
+  }
+
+  # Configure IP addresses
   provisioner "file" {
     content     = local.addc_localip
     destination = "C:\\setup\\ip_addc.txt"
@@ -101,7 +112,7 @@ resource "vultr_instance" "msql" {
   }
 
   provisioner "local-exec" {
-    command = "sleep 60"
+    command = "sleep 90" # add some shift vs SPAP
   }
 
   # Install SQL Server

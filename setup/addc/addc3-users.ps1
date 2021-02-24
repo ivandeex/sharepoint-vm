@@ -12,6 +12,8 @@ $OUPath = "OU=${OrgUnit},${DomainPath}"
 $PlainPass = (Get-Content C:\setup\pass.txt -First 1).Trim()
 $SecurePass = (ConvertTo-SecureString $PlainPass -AsPlaintext -Force)
 
+# Prevent "Error initializing default drive"
+$Env:ADPS_LoadDefaultDrive = 0
 Import-Module ActiveDirectory
 
 New-ADOrganizationalUnit `

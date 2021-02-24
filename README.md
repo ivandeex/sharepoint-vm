@@ -167,6 +167,8 @@ curl -v -4 --ntlm --negotiate -u spadmin:YOURPASS https://spap.example.com/sites
   - https://github.com/eschu21/terraform_sharepoint_automation
 - How to set up Active Directory:
   - https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/deploy/install-active-directory-domain-services--level-100-
+  - https://theitbros.com/unable-to-find-a-default-server-with-active-directory-web-services-running/
+  - https://docs.microsoft.com/en-us/archive/blogs/adpowershell/disable-loading-the-default-drive-ad-during-import-module
 - Why New-SPConfigurationDatabase fails with _RPC Server Unavailable_:
   - https://docs.microsoft.com/en-us/powershell/module/sharepoint-server/new-spconfigurationdatabase?view=sharepoint-ps
   - https://www.sharepointdiary.com/2016/09/failed-to-create-the-configuration-database-the-rpc-server-is-unavailable.html
