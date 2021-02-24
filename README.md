@@ -97,6 +97,67 @@ Currently installation of Sharepoint Server on AWS stops at the prerequisites st
 Probably, _wsman_ connection breaks due to high CPU usage caused by .NET optimization service.
 For now you can use Vultr until I have time to fix that.
 
+## HTTPS and SSL
+
+This script configures a vanilla Sharepoint site with pure HTTP access for tests.
+If you need `HTTPs`, you can update the site with a self-signed SSL certificate manually.
+
+The certificate is already created by the script and named `spap.example.com`.
+It is already added to the Windows certificate store on the Sharepoint machine,
+just add it to the test site as follows:
+- Open IIS manager `Start > All Apps > Internet Information Services (IIS) Manager`
+  (ignore _Manager 6.0_)
+- Expand `Sites` and select your _test web application_ from the navigation tree
+- Click on the `Bindings` link from the right hand panel
+- Click `Add...` in the Bindings dialog
+- In the `Add Site Binding` dialog, select HTTPS from the `Type` drop down
+- Leave the IP address as `All Unassigned`, the Port should say 443
+- Enter the `Host name` as `spap.example.com`
+- Select the `spap.example.com` SSL certificate from the drop-down menu and click OK
+
+Configure alternate HTTPS access mapping for the site:
+- Open the Sharepoint 2016 `Central Administration` tool from Windows start menu
+  or open site `http://spap:2016/` in Internet Explorer
+- Click on `Application Management > Configure alternate access mappings`
+- Click on `Edit Public URLs` and pick your _Test Web Application_
+- Enter the HTTPs URL `https://spap.example.com` in the `Intranet` (and optionally `Internet`) zone
+
+Tell Windows to trust the site certificate without confirmation:
+- Open `Control Panel > Internet Options > Content > Certificates > Intermediate Certificate Authorities`
+- Select your SSL certificate `spap.example.com` and click `Export`
+- Export it as `DER encoded binary` to the desktop.
+  Choose any name you like, for example `self-signed.cer`
+- Switch certificate store window to the `Trusted Root Certificate Authorities` tab
+- Import the certificate, confirm
+
+Open new _HTTPs_ address `https://spap.example.com/sites/test` with Internet Explorer.
+After you enter your password credendials for `example\spAdmin`, Sharepoint
+will re-create the initial content from templates and do the warm-up.
+This should be done only once.
+
+Now you can mount the site document library as a network disk:
+- Open Windows explorer and point to `This PC`
+- Click `Computer > Map Network Drive` in the menu
+- Type `https://spap.example.com/sites/test/Shared%20Documents`
+  in the `Folder` field and click OK
+- Enter your credentials when prompted
+
+If you want to access the site from the Linux test box, you will have to
+make Ubuntu trust the self-signed certificate.
+Copy it from Windows to Ubuntu, convert from the CER/DER format to PEM/CRT
+and make it trusted as follows:
+```
+openssl x509 -in self-signed.cer -inform der -out self-signed.crt
+sudo cp self-signed.crt /usr/local/share/ca-certificates/
+sudo update-ca-certificates
+```
+
+Now the following command should work without SSL errors,
+however it can require NTLM authorization:
+```
+curl -v -4 --ntlm --negotiate -u spadmin:YOURPASS https://spap.example.com/sites/test/Shared%20Documents
+```
+
 ## References
 
 - Installing Sharepoint with Powershell:
@@ -119,6 +180,10 @@ For now you can use Vultr until I have time to fix that.
 - Creating a Sharepoint site:
   - https://docs.microsoft.com/en-us/SharePoint/sites/create-a-site-collection?redirectedfrom=MSDN#create-a-site-collection-by-using-microsoft-powershell
   - http://tomkupka.com/sharepoint/create-web-application-and-site-collection-in-sharepoint-2016-using-powershell/
+- How to change a Sharepoint web application from HTTP to HTTPS:
+  - https://www.sharepointdiary.com/2012/03/configuring-ssl-certificates-in-sharepoint-2010.html
+  - https://www.sharepointdiary.com/2017/08/how-to-change-sharepoint-web-application-from-http-to-https.html
+  - https://stackoverflow.com/questions/15697157/using-curl-with-ntlm-auth-to-make-a-post-is-failing
 - How to map Sharepoint network drives using Powershell:
   - https://stackoverflow.com/questions/30298850/powershell-map-persistent-sharepoint-path
 - List of Amazon EC2 AMIs:

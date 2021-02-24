@@ -19,8 +19,8 @@ sed -ire "s/^#*DNS=.*/DNS=${ADDC_LOCALIP}/" /etc/systemd/resolved.conf
 systemctl restart systemd-resolved
 
 add-apt-repository -y ppa:longsleep/golang-backports
-apt-get -qqy install golang-1.14 build-essential
-echo "PATH=\${PATH}:/usr/lib/go-1.14/bin" > /etc/profile.d/golang.sh
+apt-get -qqy install golang-1.16 build-essential ca-certificates
+echo "PATH=\${PATH}:/usr/lib/go-1.16/bin" > /etc/profile.d/golang.sh
 
 cd ~ubuntu
 sudo -Hu ubuntu git clone https://github.com/rclone/rclone
