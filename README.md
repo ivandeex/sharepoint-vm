@@ -32,6 +32,7 @@ if you want to tune some parameters, e.g.:
 ```
 admin_password = "Secret2021!"
 aws_region = "us-east-1"
+dropbox_url = "https://www.dropbox.com/sh/aaoj8l0my90gblo/AADlQ7sVmu4uLHxKH-Nl6jYRa"
 ```
 
 Please note that password should obey default Windows requirements:

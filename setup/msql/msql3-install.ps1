@@ -28,12 +28,52 @@ $DownloadURLs = (
 $PrereqDir = 'C:\setup\prereq'
 Write-Host "Downloading SQL Server 2014 packages to ${PrereqDir} ..."
 
+$ZipFile = 'C:\temp\prereq.zip'
+try {
+    $DropboxURL = (Get-Content C:\setup\dropbox_url.txt -First 1).Trim()
+} catch {
+    $DropboxURL = ""
+}
 Import-Module BitsTransfer
 $quiet = New-Item -ItemType directory -Path $PrereqDir -ErrorAction SilentlyContinue
+
+if ($DropboxURL -ne "") {
+    if (!(Test-Path $ZipFile)) {
+        $ZipURL = ($DropboxURL -split '[?]')[0] + '?dl=1'
+        try {
+            $Client = New-Object System.Net.WebClient
+            $Client.DownloadFile($ZipURL, $ZipFile)
+        }
+        catch {
+            Write-Host " ! Error downloading archive ${ZipURL}"
+            Write-Error $_
+            exit 1
+        }
+    }
+
+    Write-Host "Extracting archive ..."
+    $quiet = [System.Reflection.Assembly]::LoadWithPartialName("System.IO.Compression.FileSystem")
+    $Zip = [System.IO.Compression.ZipFile]::OpenRead($ZipFile)
+    $Files = ($DownloadURLs | %{ $_.Split('/')[-1] })
+    foreach ($Entry in $Zip.Entries.Where({ $_.Name -in $Files })) {
+        $FileName = $Entry.Name
+        Write-Host " - Extracting: ${FileName}"
+        [System.IO.Compression.ZipFileExtensions]::ExtractToFile($Entry, "${PrereqDir}\${FileName}")
+    }
+    $Zip.Dispose()
+}
 
 foreach ($URL in $DownloadURLs) {
     $FileName = $URL.Split('/')[-1]
     $FilePath = "${PrereqDir}\${FileName}"
+
+    if ($DropboxURL -ne "") {
+        if (Test-Path $FilePath) {
+            continue
+        }
+        Write-Host " ! Missing: ${FileName}"
+        exit 1
+    }
 
     try {
         if (Test-Path $FilePath) {
@@ -52,6 +92,7 @@ foreach ($URL in $DownloadURLs) {
 }
 
 Write-Host "- Downloads complete"
+#Remote-Item $ZipFile -Force -ErrorAction SilentlyContinue
 
 # Install SQL Server 2014 Express
 $SqlServerDir = 'C:\Program Files\Microsoft SQL Server\120'

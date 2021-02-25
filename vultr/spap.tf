@@ -43,6 +43,11 @@ resource "vultr_instance" "spap" {
   }
 
   provisioner "file" {
+    content     = var.dropbox_url
+    destination = "C:\\setup\\dropbox_url.txt"
+  }
+
+  provisioner "file" {
     source      = "../setup/spap/"
     destination = "C:\\setup"
   }

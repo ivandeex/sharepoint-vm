@@ -89,6 +89,10 @@ variable "sharepoint_dir" {
   default = "D:\\Sharepoint"
 }
 
+variable "dropbox_url" {
+  default = ""
+}
+
 variable "admin_password" {
   default = "Summer.0"
   # sensitive values cause bugs in terraform

@@ -42,6 +42,11 @@ resource "aws_instance" "msql" {
   }
 
   provisioner "file" {
+    content     = var.dropbox_url
+    destination = "C:\\setup\\dropbox_url.txt"
+  }
+
+  provisioner "file" {
     source      = "../setup/msql/"
     destination = "C:\\setup"
   }
